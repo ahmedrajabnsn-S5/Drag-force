@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Drag Force Fuel Impact – A2G vs LEO vs GEO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Chart.js for the right panel chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #182848, #040814 55%);
+      color: #e5e7eb;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .dashboard {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-radius: 18px;
+      background: linear-gradient(120deg, #111827, #020617);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+      border: 1px solid rgba(148,163,184,0.25);
+    }
+
+    .header-title {
+      font-size: 20px;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .tech-select {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    select, input {
+      background: rgba(15,23,42,0.95);
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      color: #e5e7eb;
+      padding: 6px 12px;
+      font-size: 12px;
+      outline: none;
+      min-width: 80px;
+    }
+
+    input[type="number"] {
+      text-align: right;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.3fr);
+      gap: 16px;
+    }
+
+    .panel {
+      background: radial-gradient(circle at top, #0b1220, #020617 60%);
+      border-radius: 18px;
+      padding: 16px 18px;
+      border: 1px solid rgba(31,41,55,0.9);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.5);
+    }
+
+    .panel-header {
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .panel-title {
+      font-size: 14px;
+    }
+
+    .panel-tag {
+      font-size: 10px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-hint {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: -2px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    /* Metric cards */
+
+    .metric-card {
+      border-radius: 16px;
+      padding: 10px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card.A2G {
+      background: linear-gradient(145deg, #6A040F, #A92317);
+      border: 1px solid rgba(255, 80, 80, 0.7);
+    }
+
+    .metric-card.LEO {
+      background: linear-gradient(145deg, rgba(15,23,42,0.95), rgba(30,64,175,0.95));
+      border: 1px solid rgba(59,130,246,0.6);
+    }
+
+    .metric-card.GEO {
+      background: linear-gradient(145deg, #7A4A00, #D48A1E);
+      border: 1px solid rgba(255,180,70,0.6);
+    }
+
+    .metric-title {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: #f9fafb;
+      opacity: 0.9;
+    }
+
+    .fleet-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 11px;
+    }
+
+    .fleet-table th,
+    .fleet-table td {
+      padding: 6px 6px;
+      text-align: right;
+      border-bottom: 1px solid rgba(31,41,55,0.9);
+    }
+
+    .fleet-table th:first-child,
+    .fleet-table td:first-child {
+      text-align: left;
+    }
+
+    .fleet-table input {
+      width: 70px;
+      font-size: 11px;
+      padding: 2px 6px;
+    }
+
+    /* Right panel layout */
+    .right-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .right-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .cd-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .cd-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cd-item label {
+      font-size: 11px;
+    }
+
+    .cd-item input {
+      width: 100%;
+    }
+
+    /* Chart styling */
+    canvas {
+      width: 100% !important;
+      height: 380px !important;
+    }
+
+    .chart-card {
+      padding: 18px 20px;
+      border-radius: 20px;
+      background: radial-gradient(circle at top left, #020617, #020617 60%);
+      border: 1px solid rgba(31,41,55,0.9);
+      height: 430px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .chart-title {
+      font-size: 12px;
+      color: #d1d5db;
+      margin-bottom: 4px;
+    }
+
+    .legend {
+      font-size: 10px;
+      color: #9ca3af;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      margin-right: 4px;
+    }
+
+    .iata-note {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="dashboard">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="header-title">Drag Force Fuel Impact Dashboard</div>
+      <div class="header-subtitle">A2G vs LEO vs GEO – Fuel Consumption Impact</div>
+    </div>
+
+    <div class="tech-select">
+      <label>Scenario</label>
+      <select id="techSelect">
+        <option value="A2G">A2G</option>
+        <option value="LEO">LEO</option>
+        <option value="GEO">GEO</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout">
+
+    <!-- LEFT PANEL -->
+    <div class="panel">
+
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Flight & Economic Assumptions</div>
+          <div class="panel-tag">INPUTS</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- LEFT COLUMN INPUTS -->
+        <div class="control-group">
+          <div class="control-row">
+            <label>Speed (km/h)</label>
+            <select id="speedSelect">
+              <option value="600">600</option>
+              <option value="700" selected>700</option>
+              <option value="800">800</option>
+              <option value="900">900</option>
+            </select>
+          </div>
+          <div class="control-hint">Average cruise speed</div>
+
+          <div class="control-row">
+            <label>Trip duration (hr)</label>
+            <select id="tripDurationSelect">
+              <option value="2">2.0</option>
+              <option value="2.5" selected>2.5</option>
+              <option value="3">3.0</option>
+              <option value="3.5">3.5</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label>Trips per day</label>
+            <select id="tripsPerDaySelect">
+              <option value="4" selected>4.0</option>
+              <option value="4.8">4.8</option>
+              <option value="5">5.0</option>
+              <option value="6">6.0</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label>Operating days</label>
+            <select id="opDaysSelect">
+              <option value="300" selected>300</option>
+              <option value="320">320</option>
+              <option value="322">322</option>
+              <option value="330">330</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN INPUTS -->
+        <div class="control-group">
+          <div class="control-row">
+            <label>Cruise altitude (ft)</label>
+            <select id="altitudeSelect">
+              <option value="30000">30000</option>
+              <option value="32000">32000</option>
+              <option value="35000" selected>35000</option>
+              <option value="37000">37000</option>
+              <option value="38000">38000</option>
+              <option value="40000">40000</option>
+            </select>
+          </div>
+          <div class="control-hint">Directly controls air density ρ used in drag calculations.</div>
+
+          <div class="control-row">
+            <label>Fuel cost ($/L)</label>
+            <select id="fuelCostSelect">
+              <!-- IATA global jet fuel price (weekly) – last known value -->
+              <option value="0.620" data-source="iata" selected>Global IATA (auto) ≈ 0.620</option>
+              <option value="0.55">0.55</option>
+              <option value="0.80">0.80</option>
+              <option value="0.90">0.90</option>
+              <option value="1.00">1.00</option>
+            </select>
+          </div>
+          <div class="iata-note" id="iataNote">
+            Based on IATA Jet Fuel Price Monitor – last week: $98.61/bbl → ≈ 0.620 $/L (global average).
+          </div>
+        </div>
+      </div>
+
+      <!-- METRICS -->
+      <div style="margin-top:16px;">
+        <div class="panel-header">
+          <div class="panel-title">Per-aircraft Output</div>
+          <div class="panel-tag">FUEL & COST / AC / YEAR</div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card A2G">
+            <div class="metric-title">A2G Fuel / yr</div>
+            <div class="metric-value" id="a2gLiters">–</div>
+            <div class="metric-sub" id="a2gCost">–</div>
+          </div>
+
+          <div class="metric-card LEO">
+            <div class="metric-title">LEO Fuel / yr</div>
+            <div class="metric-value" id="leoLiters">–</div>
+            <div class="metric-sub" id="leoCost">–</div>
+          </div>
+
+          <div class="metric-card GEO">
+            <div class="metric-title">GEO Fuel / yr</div>
+            <div class="metric-value" id="geoLiters">–</div>
+            <div class="metric-sub" id="geoCost">–</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FLEET TABLE -->
+      <div style="margin-top:20px;">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Fleet ramp-up</div>
+            <div class="panel-tag">FUEL & COST PER YEAR – SELECTED TECHNOLOGY</div>
+          </div>
+        </div>
+
+        <table class="fleet-table">
+          <thead>
+          <tr>
+            <th>Year</th>
+            <th># Aircraft</th>
+            <th>Fuel (L/yr)</th>
+            <th>Cost (USD/yr)</th>
+          </tr>
+          </thead>
+          <tbody id="fleetBody"></tbody>
+          <tfoot>
+          <tr>
+            <td>Total</td>
+            <td></td>
+            <td id="fleetTotalLiters">–</td>
+            <td id="fleetTotalCost">–</td>
+          </tr>
+          </tfoot>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Fleet comparison</div>
+          <div class="panel-tag">FUEL CONSUMPTION VS TECHNOLOGY</div>
+        </div>
+      </div>
+
+      <div class="right-controls">
+        <div class="right-row">
+          <span>Fleet size (AC)</span>
+          <select id="fleetSizeSelect">
+            <option value="1">1 AC</option>
+            <option value="25">25 AC</option>
+            <option value="50">50 AC</option>
+            <option value="75">75 AC</option>
+            <option value="100">100 AC</option>
+            <option value="150">150 AC</option>
+            <option value="200">200 AC</option>
+            <option value="250">250 AC</option>
+          </select>
+        </div>
+
+        <div class="right-row" style="margin-top:4px;">
+          <span style="font-size:11px;color:#9ca3af;">
+            Drag coefficient C<sub>d</sub> – edit to test different antenna designs
+          </span>
+        </div>
+
+        <div class="cd-grid">
+          <div class="cd-item">
+            <label for="cdA2GInput">A2G C<sub>d</sub></label>
+            <input id="cdA2GInput" type="number" step="0.01" value="0.30">
+          </div>
+          <div class="cd-item">
+            <label for="cdLEOInput">LEO C<sub>d</sub></label>
+            <input id="cdLEOInput" type="number" step="0.01" value="1.20">
+          </div>
+          <div class="cd-item">
+            <label for="cdGEOInput">GEO C<sub>d</sub></label>
+            <input id="cdGEOInput" type="number" step="0.01" value="1.20">
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div>
+          <div class="chart-title">Total fleet fuel – A2G vs LEO vs GEO (L / year)</div>
+          <div class="legend">
+            <span><span class="legend-dot" style="background:#EF4444;"></span>A2G</span>
+            <span><span class="legend-dot" style="background:#3B82F6;"></span>LEO</span>
+            <span><span class="legend-dot" style="background:#F97316;"></span>GEO</span>
+          </div>
+        </div>
+        <canvas id="fleetCompareChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+/* CONFIG */
+
+const TECH = {
+  A2G: { H:0.07392, W:0.08382, Cd:0.3 },
+  LEO: { H:0.041,   W:0.575,   Cd:1.2 },
+  GEO: { H:0.076,   W:0.74,    Cd:1.2 }
+};
+
+const AIR = {
+  30000:0.497, 32000:0.457, 35000:0.38,
+  37000:0.348, 38000:0.332, 40000:0.301
+};
+
+const N2KG   = 0.000035;
+const FUEL_D = 0.8;
+const FLEET  = [1,7,36,50,80,91];
+
+/* DOM */
+
+const speedSelect        = document.getElementById("speedSelect");
+const tripDurationSelect = document.getElementById("tripDurationSelect");
+const tripsPerDaySelect  = document.getElementById("tripsPerDaySelect");
+const opDaysSelect       = document.getElementById("opDaysSelect");
+const altitudeSelect     = document.getElementById("altitudeSelect");
+const fuelCostSelect     = document.getElementById("fuelCostSelect");
+const techSelect         = document.getElementById("techSelect");
+
+const fleetBody         = document.getElementById("fleetBody");
+const fleetTotalLiters  = document.getElementById("fleetTotalLiters");
+const fleetTotalCost    = document.getElementById("fleetTotalCost");
+
+const a2gLitersEl = document.getElementById("a2gLiters");
+const a2gCostEl   = document.getElementById("a2gCost");
+const leoLitersEl = document.getElementById("leoLiters");
+const leoCostEl   = document.getElementById("leoCost");
+const geoLitersEl = document.getElementById("geoLiters");
+const geoCostEl   = document.getElementById("geoCost");
+
+const fleetSizeSelect = document.getElementById("fleetSizeSelect");
+const cdA2GInput      = document.getElementById("cdA2GInput");
+const cdLEOInput      = document.getElementById("cdLEOInput");
+const cdGEOInput      = document.getElementById("cdGEOInput");
+const iataNoteEl      = document.getElementById("iataNote");
+
+/* HELPER – compact money format */
+
+function formatMoneyCompact(v) {
+  const abs = Math.abs(v);
+  let txt;
+  if (abs >= 1e9) {
+    txt = (v/1e9).toFixed(1) + "B";
+  } else if (abs >= 1e6) {
+    txt = (v/1e6).toFixed(1) + "M";
+  } else if (abs >= 1e3) {
+    txt = (v/1e3).toFixed(1) + "K";
+  } else {
+    txt = v.toFixed(0);
+  }
+  txt = txt.replace(/\.0([KMB])/,"$1");
+  return "$ " + txt;
+}
+
+/* FLEET TABLE */
+
+function buildFleet() {
+  fleetBody.innerHTML = "";
+  FLEET.forEach((v,i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>Year ${i+1}</td>
+      <td><input type="number" value="${v}" data-i="${i}" style="width:60px"></td>
+      <td id="fuel${i}">–</td>
+      <td id="cost${i}">–</td>
+    `;
+    fleetBody.appendChild(tr);
+  });
+}
+
+buildFleet();
+
+/* PHYSICS */
+
+function compute(techKey, p) {
+  const cfg = TECH[techKey];
+  const A   = cfg.H * cfg.W;
+  const rho = AIR[p.alt] || AIR[35000];
+  const V   = p.spd / 3.6;
+
+  const Df = 0.5 * cfg.Cd * rho * V * V * A;
+  const Fr = Df * N2KG;
+
+  const Ltrip = (Fr * (p.tdur * 3600)) / FUEL_D;
+  const Lyr   = Ltrip * (p.trips * p.days);
+  const Cyr   = Lyr * p.cost;
+
+  return { Lyr, Cyr };
+}
+
+/* PLUGIN FOR VALUE LABELS */
+
+const valueLabelPlugin = {
+  id: 'valueLabelPlugin',
+  afterDatasetsDraw(chart) {
+    const {ctx} = chart;
+    const ds = chart.data.datasets[0];
+    const meta = chart.getDatasetMeta(0);
+    ctx.save();
+    ctx.fillStyle = "#e5e7eb";
+    ctx.font = "11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+
+    meta.data.forEach((bar, index) => {
+      const value = ds.data[index];
+      if (value == null) return;
+      const label = value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      const x = bar.x;
+      const y = bar.y - 6;
+      ctx.fillText(label, x, y);
+    });
+
+    ctx.restore();
+  }
+};
+
+Chart.register(valueLabelPlugin);
+
+/* CHART INIT */
+
+let fleetCompareChart = null;
+
+function initFleetChart() {
+  const ctx = document.getElementById("fleetCompareChart").getContext("2d");
+  fleetCompareChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["A2G", "LEO", "GEO"],
+      datasets: [{
+        label: "Fleet fuel (L / year)",
+        data: [0,0,0],
+        backgroundColor: ["#EF4444","#3B82F6","#F97316"],
+        borderRadius: 6,
+        barPercentage: 0.55,
+        categoryPercentage: 0.5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 20, bottom: 15, left: 10, right: 10 }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 },
+          callbacks: {
+            label: ctx => {
+              const v = ctx.raw || 0;
+              return "Fuel: " + v.toLocaleString(undefined,{ maximumFractionDigits:0 }) + " L / yr";
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display:false },
+          ticks: {
+            color:"#d1d5db",
+            font:{ size: 13, weight:"500" }
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color:"rgba(55,65,81,0.5)" },
+          ticks: {
+            color:"#9ca3af",
+            font:{ size: 11 },
+            callback: value => {
+              if (value === 0) return "0";
+              if (value >= 1e6) return (value/1e6) + "M";
+              if (value >= 1e3) return (value/1e3) + "k";
+              return value;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+/* RECALC */
+
+function recalc() {
+  TECH.A2G.Cd = parseFloat(cdA2GInput.value) || 0.3;
+  TECH.LEO.Cd = parseFloat(cdLEOInput.value) || 1.2;
+  TECH.GEO.Cd = parseFloat(cdGEOInput.value) || 1.2;
+
+  const p = {
+    spd:   parseFloat(speedSelect.value)        || 700,
+    tdur:  parseFloat(tripDurationSelect.value) || 2.5,
+    trips: parseFloat(tripsPerDaySelect.value)  || 4,
+    days:  parseFloat(opDaysSelect.value)       || 300,
+    alt:   parseInt(altitudeSelect.value,10),
+    cost:  parseFloat(fuelCostSelect.value)     || 0.62
+  };
+
+  const A2G = compute("A2G", p);
+  const LEO = compute("LEO", p);
+  const GEO = compute("GEO", p);
+
+  a2gLitersEl.textContent = Math.round(A2G.Lyr).toLocaleString() + " L/yr";
+  leoLitersEl.textContent = Math.round(LEO.Lyr).toLocaleString() + " L/yr";
+  geoLitersEl.textContent = Math.round(GEO.Lyr).toLocaleString() + " L/yr";
+
+  a2gCostEl.textContent = "$ " + Math.round(A2G.Cyr).toLocaleString();
+  leoCostEl.textContent = "$ " + Math.round(LEO.Cyr).toLocaleString();
+  geoCostEl.textContent = "$ " + Math.round(GEO.Cyr).toLocaleString();
+
+  const selTech = techSelect.value;
+  const selRes  = selTech === "A2G" ? A2G : selTech === "LEO" ? LEO : GEO;
+
+  let totalFuel = 0;
+  let totalCost = 0;
+  document.querySelectorAll("#fleetBody input").forEach((inp,i) => {
+    const ac = parseFloat(inp.value) || 0;
+    const fuel = ac * selRes.Lyr;
+    const cost = ac * selRes.Cyr;
+    document.getElementById("fuel"+i).textContent = Math.round(fuel).toLocaleString();
+    document.getElementById("cost"+i).textContent = formatMoneyCompact(cost);
+    totalFuel += fuel;
+    totalCost += cost;
+  });
+
+  fleetTotalLiters.textContent = Math.round(totalFuel).toLocaleString();
+  fleetTotalCost.textContent   = formatMoneyCompact(totalCost);
+
+  const fleetSize = parseFloat(fleetSizeSelect.value) || 1;
+  const a2gFleet = A2G.Lyr * fleetSize;
+  const leoFleet = LEO.Lyr * fleetSize;
+  const geoFleet = GEO.Lyr * fleetSize;
+
+  if (fleetCompareChart) {
+    const maxVal = Math.max(a2gFleet, leoFleet, geoFleet, 1);
+    fleetCompareChart.options.scales.y.suggestedMax = maxVal * 1.15;
+
+    fleetCompareChart.data.datasets[0].data = [a2gFleet, leoFleet, geoFleet];
+    fleetCompareChart.update();
+  }
+}
+
+/* AUTO-FETCH LATEST IATA PRICE (best effort) */
+
+async function fetchIataPrice() {
+  try {
+    const resp = await fetch("https://www.iata.org/en/publications/economics/fuel-monitor/");
+    if (!resp.ok) return;
+
+    const text = await resp.text();
+
+    // Find first "$xx.xx/bbl"
+    const match = text.match(/\$([\d.,]+)\/bbl/);
+    if (!match) return;
+
+    const bblStr = match[1].replace(/,/g, "");
+    const bbl = parseFloat(bblStr);
+    if (!bbl || isNaN(bbl)) return;
+
+    // Convert $/bbl to $/L: 1 bbl ≈ 159 L
+    const perL = bbl / 159;
+    const perLRounded = perL.toFixed(3);
+
+    let opt = fuelCostSelect.querySelector('option[data-source="iata"]');
+    if (!opt) {
+      opt = document.createElement("option");
+      opt.dataset.source = "iata";
+      fuelCostSelect.prepend(opt);
+    }
+    opt.value = perLRounded;
+    opt.textContent = `Global IATA (auto) ≈ ${perLRounded}`;
+    fuelCostSelect.value = perLRounded;
+
+    if (iataNoteEl) {
+      iataNoteEl.textContent =
+        `Live from IATA Jet Fuel Price Monitor: $${bbl.toFixed(2)}/bbl → ≈ ${perLRounded} $/L (global average).`;
+    }
+
+    recalc();
+  } catch (e) {
+    console.warn("IATA price fetch failed (possibly CORS / network):", e);
+  }
+}
+
+/* EVENTS */
+
+function bindEvents() {
+  [
+    speedSelect,
+    tripDurationSelect,
+    tripsPerDaySelect,
+    opDaysSelect,
+    altitudeSelect,
+    fuelCostSelect,
+    techSelect,
+    fleetSizeSelect,
+    cdA2GInput,
+    cdLEOInput,
+    cdGEOInput
+  ].forEach(el => el.addEventListener("input", recalc));
+
+  document.addEventListener("input", e => {
+    if (e.target && e.target.closest("#fleetBody input")) {
+      recalc();
+    }
+  });
+}
+
+/* INIT */
+
+initFleetChart();
+bindEvents();
+recalc();
+fetchIataPrice();  // auto-update from IATA on load (best effort)
+</script>
+
+</body>
+</html>
